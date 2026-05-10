@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>지뢰찾기</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <section class="game-shell" aria-labelledby="game-title">
+        <header class="topbar">
+          <div class="title-block">
+            <p class="eyebrow">Minesweeper</p>
+            <h1 id="game-title">지뢰찾기</h1>
+          </div>
+          <button class="primary-button" id="new-game" type="button">새 게임</button>
+        </header>
+
+        <div class="control-panel">
+          <div class="preset-tabs" role="tablist" aria-label="난이도">
+            <button class="preset-tab is-active" type="button" data-preset="beginner" aria-pressed="true">
+              초급
+              <span>9 x 9</span>
+            </button>
+            <button class="preset-tab" type="button" data-preset="intermediate" aria-pressed="false">
+              중급
+              <span>16 x 16</span>
+            </button>
+            <button class="preset-tab" type="button" data-preset="expert" aria-pressed="false">
+              고급
+              <span>30 x 16</span>
+            </button>
+          </div>
+
+          <div class="stats" aria-live="polite">
+            <div class="stat">
+              <span>남은 지뢰</span>
+              <strong id="mine-count">10</strong>
+            </div>
+            <div class="stat">
+              <span>시간</span>
+              <strong id="timer">000</strong>
+            </div>
+            <div class="stat">
+              <span>연 칸</span>
+              <strong id="revealed-count">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="statusbar">
+          <p id="status-message" aria-live="polite">첫 칸을 열어 시작하세요.</p>
+          <div class="tool-toggle" role="group" aria-label="입력 모드">
+            <button class="tool-button is-active" type="button" data-tool="reveal" aria-pressed="true">
+              <span class="open-icon" aria-hidden="true"></span>
+              열기
+            </button>
+            <button class="tool-button" type="button" data-tool="flag" aria-pressed="false">
+              <span class="flag-icon" aria-hidden="true"></span>
+              표시
+            </button>
+          </div>
+        </div>
+
+        <div class="board-frame">
+          <div id="board" class="board" role="grid" aria-label="지뢰찾기 보드"></div>
+        </div>
+
+        <div id="pause-overlay" class="pause-overlay" hidden>
+          <button class="play-button" id="resume-game" type="button" aria-label="게임 재개">
+            <span class="play-icon" aria-hidden="true"></span>
+            재개
+          </button>
+        </div>
+
+        <div id="result-overlay" class="result-overlay" hidden>
+          <section class="result-dialog" role="dialog" aria-modal="true" aria-labelledby="result-title">
+            <div class="result-badge" id="result-badge" aria-hidden="true"></div>
+            <p class="result-label" id="result-label">결과</p>
+            <h2 id="result-title">게임 종료</h2>
+            <p class="result-copy" id="result-copy"></p>
+
+            <dl class="result-stats">
+              <div>
+                <dt>기록</dt>
+                <dd id="result-time">00:00</dd>
+              </div>
+              <div>
+                <dt>연 칸</dt>
+                <dd id="result-revealed">0</dd>
+              </div>
+              <div>
+                <dt>지뢰</dt>
+                <dd id="result-mines">0</dd>
+              </div>
+            </dl>
+
+            <div class="result-actions">
+              <button class="secondary-button" id="view-board" type="button">보드 보기</button>
+              <button class="primary-button" id="result-new-game" type="button">새 게임</button>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
