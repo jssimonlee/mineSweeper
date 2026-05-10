@@ -145,12 +145,21 @@ function handleCellKeyDown(event) {
 
   if (event.key === " " || event.key.toLowerCase() === "f" || event.key.toLowerCase() === "m") {
     event.preventDefault();
-    toggleMark(index);
+    event.stopPropagation();
+    toggleMark(getPointerTargetIndex(index));
   }
 }
 
 function handleCellPointerEnter(event) {
   hoveredCellIndex = Number(event.currentTarget.dataset.index);
+}
+
+function getPointerTargetIndex(fallbackIndex) {
+  if (hoveredCellIndex !== null && board.matches(":hover")) {
+    return hoveredCellIndex;
+  }
+
+  return fallbackIndex;
 }
 
 function handlePointerDown(event) {
@@ -563,10 +572,6 @@ viewBoardButton.addEventListener("click", hideResultOverlay);
 window.addEventListener("blur", pauseGame);
 document.addEventListener("keydown", (event) => {
   if (event.key !== " " || hoveredCellIndex === null || !board.matches(":hover")) {
-    return;
-  }
-
-  if (event.target.closest?.(".cell")) {
     return;
   }
 
