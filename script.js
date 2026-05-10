@@ -28,6 +28,7 @@ const toolButtons = [...document.querySelectorAll("[data-tool]")];
 let state = createState("beginner");
 let longPressTimer = null;
 let ignoreNextClick = false;
+let hoveredCellIndex = null;
 
 function createState(presetKey) {
   const preset = PRESETS[presetKey];
@@ -61,6 +62,7 @@ function createState(presetKey) {
 function initGame(presetKey = state.presetKey) {
   clearLongPressTimer();
   ignoreNextClick = false;
+  hoveredCellIndex = null;
   stopTimer();
   state = createState(presetKey);
   hidePauseOverlay();
@@ -86,6 +88,7 @@ function buildBoard() {
     cellButton.setAttribute("role", "gridcell");
     cellButton.setAttribute("aria-rowindex", String(Math.floor(index / state.cols) + 1));
     cellButton.setAttribute("aria-colindex", String((index % state.cols) + 1));
+    cellButton.setAttribute("aria-keyshortcuts", "Enter Space");
 
     if ((Math.floor(index / state.cols) + index) % 2 === 1) {
       cellButton.classList.add("is-odd");
@@ -94,6 +97,7 @@ function buildBoard() {
     cellButton.addEventListener("click", handleCellClick);
     cellButton.addEventListener("contextmenu", handleCellContextMenu);
     cellButton.addEventListener("keydown", handleCellKeyDown);
+    cellButton.addEventListener("pointerenter", handleCellPointerEnter);
     cellButton.addEventListener("pointerdown", handlePointerDown);
     cellButton.addEventListener("pointerup", clearLongPressTimer);
     cellButton.addEventListener("pointerleave", clearLongPressTimer);
@@ -134,15 +138,19 @@ function handleCellContextMenu(event) {
 function handleCellKeyDown(event) {
   const index = Number(event.currentTarget.dataset.index);
 
-  if (event.key === "Enter" || event.key === " ") {
+  if (event.key === "Enter") {
     event.preventDefault();
     revealCell(index);
   }
 
-  if (event.key.toLowerCase() === "f" || event.key.toLowerCase() === "m") {
+  if (event.key === " " || event.key.toLowerCase() === "f" || event.key.toLowerCase() === "m") {
     event.preventDefault();
     toggleMark(index);
   }
+}
+
+function handleCellPointerEnter(event) {
+  hoveredCellIndex = Number(event.currentTarget.dataset.index);
 }
 
 function handlePointerDown(event) {
@@ -553,6 +561,23 @@ resultNewGameButton.addEventListener("click", () => initGame());
 viewBoardButton.addEventListener("click", hideResultOverlay);
 
 window.addEventListener("blur", pauseGame);
+document.addEventListener("keydown", (event) => {
+  if (event.key !== " " || hoveredCellIndex === null || !board.matches(":hover")) {
+    return;
+  }
+
+  if (event.target.closest?.(".cell")) {
+    return;
+  }
+
+  event.preventDefault();
+  toggleMark(hoveredCellIndex);
+});
+
+board.addEventListener("pointerleave", () => {
+  hoveredCellIndex = null;
+});
+
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     pauseGame();
