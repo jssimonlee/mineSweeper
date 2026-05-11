@@ -276,6 +276,19 @@ h1 {
   background: var(--tile-b);
 }
 
+.cell.is-chord-preview {
+  background: #dce6f2;
+  border-color: #c4cfdd;
+  box-shadow: inset 0 2px 5px rgb(15 23 42 / 18%);
+  color: var(--ink);
+  transform: translateY(1px);
+}
+
+.cell.is-chord-source {
+  outline: 2px solid rgb(37 99 235 / 38%);
+  outline-offset: -2px;
+}
+
 .cell:hover {
   outline: 2px solid rgb(255 255 255 / 58%);
   outline-offset: -2px;

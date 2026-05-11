@@ -24,11 +24,14 @@ const resultNewGameButton = document.querySelector("#result-new-game");
 const viewBoardButton = document.querySelector("#view-board");
 const presetButtons = [...document.querySelectorAll("[data-preset]")];
 const toolButtons = [...document.querySelectorAll("[data-tool]")];
+const LONG_PRESS_MS = 430;
 
 let state = createState("beginner");
 let longPressTimer = null;
 let ignoreNextClick = false;
 let hoveredCellIndex = null;
+let activeChordIndex = null;
+let activeChordPointerId = null;
 
 function createState(presetKey) {
   const preset = PRESETS[presetKey];
@@ -63,6 +66,8 @@ function initGame(presetKey = state.presetKey) {
   clearLongPressTimer();
   ignoreNextClick = false;
   hoveredCellIndex = null;
+  activeChordIndex = null;
+  activeChordPointerId = null;
   stopTimer();
   state = createState(presetKey);
   hidePauseOverlay();
@@ -99,9 +104,9 @@ function buildBoard() {
     cellButton.addEventListener("keydown", handleCellKeyDown);
     cellButton.addEventListener("pointerenter", handleCellPointerEnter);
     cellButton.addEventListener("pointerdown", handlePointerDown);
-    cellButton.addEventListener("pointerup", clearLongPressTimer);
-    cellButton.addEventListener("pointerleave", clearLongPressTimer);
-    cellButton.addEventListener("pointercancel", clearLongPressTimer);
+    cellButton.addEventListener("pointerup", handlePointerUp);
+    cellButton.addEventListener("pointerleave", handlePointerLeave);
+    cellButton.addEventListener("pointercancel", handlePointerCancel);
 
     board.appendChild(cellButton);
   });
@@ -163,16 +168,64 @@ function getPointerTargetIndex(fallbackIndex) {
 }
 
 function handlePointerDown(event) {
-  if (event.pointerType === "mouse") {
+  if (event.button !== 0) {
     return;
   }
 
   clearLongPressTimer();
   const index = Number(event.currentTarget.dataset.index);
+
+  if (canChordFrom(index)) {
+    const pointerId = event.pointerId;
+    longPressTimer = window.setTimeout(() => {
+      longPressTimer = null;
+      beginChordPress(index, pointerId);
+    }, LONG_PRESS_MS);
+    return;
+  }
+
+  if (event.pointerType === "mouse") {
+    return;
+  }
+
   longPressTimer = window.setTimeout(() => {
+    longPressTimer = null;
     ignoreNextClick = true;
     toggleMark(index);
-  }, 430);
+  }, LONG_PRESS_MS);
+}
+
+function handlePointerUp(event) {
+  const shouldReleaseChord = activeChordIndex !== null && activeChordPointerId === event.pointerId;
+  const chordIndex = activeChordIndex;
+
+  clearLongPressTimer();
+
+  if (!shouldReleaseChord) {
+    return;
+  }
+
+  activeChordIndex = null;
+  activeChordPointerId = null;
+  revealCell(chordIndex);
+}
+
+function handlePointerLeave(event) {
+  clearLongPressTimer();
+
+  if (activeChordIndex !== null && activeChordPointerId === event.pointerId) {
+    cancelChordPress();
+    ignoreNextClick = false;
+  }
+}
+
+function handlePointerCancel(event) {
+  clearLongPressTimer();
+
+  if (activeChordIndex !== null && activeChordPointerId === event.pointerId) {
+    cancelChordPress();
+    ignoreNextClick = false;
+  }
 }
 
 function clearLongPressTimer() {
@@ -180,6 +233,39 @@ function clearLongPressTimer() {
     window.clearTimeout(longPressTimer);
     longPressTimer = null;
   }
+}
+
+function canChordFrom(index) {
+  const cell = state.cells[index];
+  return Boolean(
+    state.activeTool === "reveal" &&
+      !state.ended &&
+      !state.paused &&
+      cell &&
+      cell.revealed &&
+      !cell.mine
+  );
+}
+
+function beginChordPress(index, pointerId) {
+  if (!canChordFrom(index)) {
+    return;
+  }
+
+  activeChordIndex = index;
+  activeChordPointerId = pointerId;
+  ignoreNextClick = true;
+  renderBoard();
+}
+
+function cancelChordPress() {
+  if (activeChordIndex === null) {
+    return;
+  }
+
+  activeChordIndex = null;
+  activeChordPointerId = null;
+  renderBoard();
 }
 
 function revealCell(index) {
@@ -251,6 +337,13 @@ function revealAroundNumber(index) {
   }
 
   checkWin();
+}
+
+function getChordPreviewIndexes(index) {
+  return getNeighbors(index).filter((neighborIndex) => {
+    const neighbor = state.cells[neighborIndex];
+    return neighbor && !neighbor.revealed && !neighbor.flagged;
+  });
 }
 
 function toggleMark(index) {
@@ -371,6 +464,8 @@ function endGame(won) {
 
 function renderBoard() {
   const buttons = board.querySelectorAll(".cell");
+  const chordPreviewIndexes =
+    activeChordIndex === null ? new Set() : new Set(getChordPreviewIndexes(activeChordIndex));
 
   buttons.forEach((button, index) => {
     const cell = state.cells[index];
@@ -380,6 +475,14 @@ function renderBoard() {
     button.removeAttribute("data-number");
     button.setAttribute("aria-label", describeCell(cell, index));
     button.setAttribute("aria-selected", cell.revealed ? "true" : "false");
+
+    if (index === activeChordIndex) {
+      button.classList.add("is-chord-source");
+    }
+
+    if (chordPreviewIndexes.has(index)) {
+      button.classList.add("is-chord-preview");
+    }
 
     if (cell.revealed) {
       button.classList.add("is-revealed");
