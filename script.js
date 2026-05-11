@@ -24,7 +24,7 @@ const resultNewGameButton = document.querySelector("#result-new-game");
 const viewBoardButton = document.querySelector("#view-board");
 const presetButtons = [...document.querySelectorAll("[data-preset]")];
 const toolButtons = [...document.querySelectorAll("[data-tool]")];
-const LONG_PRESS_MS = 430;
+const LONG_PRESS_MS = 450;
 
 let state = createState("beginner");
 let longPressTimer = null;
@@ -32,6 +32,7 @@ let ignoreNextClick = false;
 let hoveredCellIndex = null;
 let activeChordIndex = null;
 let activeChordPointerId = null;
+let chordPressTimedOut = false;
 
 function createState(presetKey) {
   const preset = PRESETS[presetKey];
@@ -68,6 +69,7 @@ function initGame(presetKey = state.presetKey) {
   hoveredCellIndex = null;
   activeChordIndex = null;
   activeChordPointerId = null;
+  chordPressTimedOut = false;
   stopTimer();
   state = createState(presetKey);
   hidePauseOverlay();
@@ -176,10 +178,10 @@ function handlePointerDown(event) {
   const index = Number(event.currentTarget.dataset.index);
 
   if (canChordFrom(index)) {
-    const pointerId = event.pointerId;
+    beginChordPress(index, event.pointerId);
     longPressTimer = window.setTimeout(() => {
       longPressTimer = null;
-      beginChordPress(index, pointerId);
+      chordPressTimedOut = true;
     }, LONG_PRESS_MS);
     return;
   }
@@ -198,6 +200,7 @@ function handlePointerDown(event) {
 function handlePointerUp(event) {
   const shouldReleaseChord = activeChordIndex !== null && activeChordPointerId === event.pointerId;
   const chordIndex = activeChordIndex;
+  const shouldRevealChord = shouldReleaseChord && !chordPressTimedOut;
 
   clearLongPressTimer();
 
@@ -207,7 +210,14 @@ function handlePointerUp(event) {
 
   activeChordIndex = null;
   activeChordPointerId = null;
-  revealCell(chordIndex);
+  chordPressTimedOut = false;
+
+  if (shouldRevealChord) {
+    revealCell(chordIndex);
+    return;
+  }
+
+  renderBoard();
 }
 
 function handlePointerLeave(event) {
@@ -254,6 +264,7 @@ function beginChordPress(index, pointerId) {
 
   activeChordIndex = index;
   activeChordPointerId = pointerId;
+  chordPressTimedOut = false;
   ignoreNextClick = true;
   renderBoard();
 }
@@ -265,6 +276,7 @@ function cancelChordPress() {
 
   activeChordIndex = null;
   activeChordPointerId = null;
+  chordPressTimedOut = false;
   renderBoard();
 }
 
